@@ -6,12 +6,12 @@ plugins {
 
 android {
   namespace = "to.holepunch.bare.android"
-  compileSdk = 34
+  compileSdk = 35
   ndkVersion = "27.2.12479018"
 
   defaultConfig {
     applicationId = "to.holepunch.bare.android"
-    minSdk = 28
+    minSdk = 24
     targetSdk = 35
     versionCode = 1
     versionName = "1.0"
@@ -42,11 +42,11 @@ tasks.register("link", Exec) {
 
   commandLine([
     "node_modules/.bin/bare-link",
-    "--target", "android-arm",
-    "--target", "android-arm64",
-    "--target", "android-ia32",
-    "--target", "android-x64",
-    "--needs", "libbare-kit.so",
+    "--host", "android-arm",
+    "--host", "android-arm64",
+    "--host", "android-ia32",
+    "--host", "android-x64",
+    // "--needs", "libbare-kit.so",
     "--out", "app/src/main/addons"
   ])
 }
@@ -56,10 +56,10 @@ tasks.register("pack", Exec) {
 
   commandLine([
     "node_modules/.bin/bare-pack",
-    "--target", "android-arm",
-    "--target", "android-arm64",
-    "--target", "android-ia32",
-    "--target", "android-x64",
+    "--host", "android-arm",
+    "--host", "android-arm64",
+    "--host", "android-ia32",
+    "--host", "android-x64",
     "--linked",
     "--out", "app/src/main/assets/app.bundle",
     "app/src/main/js/app.js"
@@ -74,5 +74,14 @@ dependencies {
   implementation('androidx.compose.ui:ui:1.7.6')
   implementation('androidx.compose.ui:ui-tooling-preview:1.7.6')
   implementation('androidx.activity:activity-compose:1.9.3')
+  implementation("androidx.navigation:navigation-compose:2.8.5")
+
+  // Lifecycle
+  implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+  implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+
+  // Koin
+  implementation("io.insert-koin:koin-android:3.5.6")
+  implementation("io.insert-koin:koin-androidx-compose:3.5.6")
 
 }
