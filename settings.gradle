@@ -2,6 +2,7 @@ pluginManagement {
   repositories {
     google()
     mavenCentral()
+    gradlePluginPortal()
   }
 }
 
@@ -12,4 +13,4 @@ dependencyResolutionManagement {
   }
 }
 
-include ":app"
+include(":app")
