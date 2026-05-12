@@ -6,13 +6,13 @@ plugins {
 
 android {
   namespace = "to.foss.peerdrop.android"
-  compileSdk = 35
+  compileSdk = 36
   ndkVersion = "27.2.12479018"
 
   defaultConfig {
     applicationId = "to.foss.peerdrop.android"
     minSdk = 24
-    targetSdk = 35
+    targetSdk = 36
     versionCode = 1
     versionName = "1.0"
   }
@@ -75,6 +75,8 @@ dependencies {
   implementation('androidx.compose.ui:ui-tooling-preview:1.11.1')
   implementation('androidx.activity:activity-compose:1.13.0')
   implementation("androidx.navigation:navigation-compose:2.9.8")
+  implementation('androidx.compose.material:material-icons-extended:1.7.8')
+  implementation('com.google.zxing:core:3.5.4')
 
   // Lifecycle
   implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
@@ -83,5 +85,5 @@ dependencies {
   // Koin
   implementation("io.insert-koin:koin-android:4.2.1")
   implementation("io.insert-koin:koin-androidx-compose:4.2.1")
-
+  implementation("io.insert-koin:koin-androidx-compose-navigation:4.2.1")
 }
