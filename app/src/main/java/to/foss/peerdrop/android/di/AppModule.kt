@@ -1,23 +1,33 @@
 package to.foss.peerdrop.android.di
 
 import org.koin.android.ext.koin.androidContext
-import org.koin.androidx.viewmodel.dsl.viewModel
+import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
-import to.holepunch.peerdrop.android.data.ipc.IPCService
-import to.holepunch.peerdrop.android.data.repository.PeerDropRepository
-import to.holepunch.peerdrop.android.ui.devices.DevicesViewModel
-import to.holepunch.peerdrop.android.ui.settings.SettingsViewModel
-import to.holepunch.peerdrop.android.ui.transfers.TransfersViewModel
+import to.foss.peerdrop.android.data.ipc.IPCService
+import to.foss.peerdrop.android.data.repository.PeerDropRepository
+import to.foss.peerdrop.android.ui.devices.DevicesViewModel
+import to.foss.peerdrop.android.ui.settings.SettingsViewModel
+import to.foss.peerdrop.android.ui.transfers.TransfersViewModel
+import java.io.File
 
 val appModule = module {
 
-    // IPCService — singleton, owns worklet + IPC lifecycle
-    single { IPCService(androidContext().assets) }
+    single {
+        val context     = androidContext()
+        val filesDir    = context.filesDir
+        val downloadDir = context.getExternalFilesDir(null)
+            ?.let { File(it, "PeerDrop") }
+            ?: File(context.filesDir, "PeerDrop")
 
-    // Repository — singleton, subscribes to IPCService.incoming
+        IPCService(
+            assets      = context.assets,
+            filesDir    = filesDir,
+            downloadDir = downloadDir
+        )
+    }
+
     single { PeerDropRepository(get()) }
 
-    // ViewModels — one per screen, all share the same repository
     viewModel { DevicesViewModel(get()) }
     viewModel { TransfersViewModel(get()) }
     viewModel { SettingsViewModel(get()) }
