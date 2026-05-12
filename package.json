@@ -21,5 +21,16 @@
     "bare-pack": "^2.0.1",
     "prettier": "^3.4.2",
     "prettier-config-standard": "^7.0.0"
+  },
+  "dependencies": {
+    "bare-fs": "^4.7.1",
+    "bare-os": "^3.9.1",
+    "bare-path": "^3.0.0",
+    "bare-rpc": "^1.3.1",
+    "compact-encoding": "^3.0.1",
+    "hypercore-crypto": "^3.7.0",
+    "hyperswarm": "^4.17.0",
+    "keet-identity-key": "^3.2.0",
+    "protomux": "^3.11.0"
   }
 }
