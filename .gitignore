@@ -5,5 +5,8 @@ build/
 prebuilds/
 node_modules/
 local.properties
+package-lock.json
 *.bundle
 *.zip
+*.hprof
+
