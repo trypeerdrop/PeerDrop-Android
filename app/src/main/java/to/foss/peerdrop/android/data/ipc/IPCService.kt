@@ -1,6 +1,5 @@
-package to.foss.bare.android.data.ipc
+package to.foss.peerdrop.android.data.ipc
 
-import android.content.Context
 import android.content.res.AssetManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -10,27 +9,34 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import to.foss.peerdrop.android.data.ipc.IPCUtils.readByteStream
 import to.holepunch.bare.kit.IPC
 import to.holepunch.bare.kit.Worklet
+import java.io.File
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
-/**
- * Manages the bare Worklet + IPC lifecycle.
- * Single instance — injected via Koin as a singleton.
- */
-class IPCService(private val assets: AssetManager) {
-
+class IPCService(
+    private val assets:      AssetManager,
+    private val filesDir:    File,
+    val          downloadDir: File
+) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private var worklet: Worklet? = null
-    private var _ipc: IPC? = null
-    val ipc: IPC get() = _ipc ?: error("IPCService not started")
+    private var _ipc:    IPC?     = null
 
     private val _incoming = MutableSharedFlow<ByteArray>(extraBufferCapacity = 64)
     val incoming: Flow<ByteArray> = _incoming.asSharedFlow()
 
     fun start() {
         worklet = Worklet(null).also { wl ->
-            wl.start("/app.bundle", assets.open("app.bundle"), null)
+            // Pass filesDir as argv[0] — accessible in JS as Bare.argv[0]
+            wl.start(
+                "/app.bundle",
+                assets.open("app.bundle"),
+                arrayOf(filesDir.absolutePath)
+            )
             _ipc = IPC(wl)
             _ipc!!.readable {
                 scope.launch { readLoop() }
@@ -38,24 +44,20 @@ class IPCService(private val assets: AssetManager) {
         }
     }
 
-    fun suspend() {
-        worklet?.suspend()
-    }
-
-    fun resume() {
-        worklet?.resume()
-    }
+    fun suspend() { worklet?.suspend() }
+    fun resume()  { worklet?.resume()  }
 
     fun destroy() {
         scope.cancel()
         worklet?.terminate()
         worklet = null
-        _ipc = null
+        _ipc    = null
     }
 
     fun write(data: ByteArray) {
         scope.launch {
-            _ipc?.write(java.nio.ByteBuffer.wrap(data))
+            try { _ipc?.write(ByteBuffer.wrap(data)) }
+            catch (e: Exception) { e.printStackTrace() }
         }
     }
 
@@ -63,8 +65,8 @@ class IPCService(private val assets: AssetManager) {
         val ipc = _ipc ?: return
         val acc = mutableListOf<Byte>()
 
-        ipc.readStream().collect { raw ->
-            acc.addAll(raw.toByteArray(Charsets.ISO_8859_1).toList())
+        ipc.readByteStream().collect { bytes ->
+            acc.addAll(bytes.toList())
             drainFrames(acc)
         }
     }
@@ -72,8 +74,8 @@ class IPCService(private val assets: AssetManager) {
     private suspend fun drainFrames(acc: MutableList<Byte>) {
         while (acc.size >= 4) {
             val lenBytes = acc.take(4).toByteArray()
-            val frameLen = java.nio.ByteBuffer.wrap(lenBytes)
-                .order(java.nio.ByteOrder.LITTLE_ENDIAN).int
+            val frameLen = ByteBuffer.wrap(lenBytes)
+                .order(ByteOrder.LITTLE_ENDIAN).int
 
             if (acc.size < 4 + frameLen) break
 

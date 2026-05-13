@@ -1,4 +1,4 @@
-package to.foss.bare.android.data.ipc
+package to.foss.peerdrop.android.data.ipc
 
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -12,15 +12,16 @@ import java.nio.charset.Charset
  */
 object IPCUtils {
 
-    fun IPC.readStream(): Flow<String> = callbackFlow {
-        val utf8 = Charset.forName("UTF-8")
+    fun IPC.readByteStream(): Flow<ByteArray> = callbackFlow {
         val cb = IPC.PollCallback {
             try {
                 var buf: ByteBuffer?
                 while (true) {
-                    buf = this@readStream.read()
+                    buf = this@readByteStream.read()
                     if (buf == null) break
-                    trySend(utf8.decode(buf).toString())
+                    val bytes = ByteArray(buf.remaining())
+                    buf.get(bytes)
+                    trySend(bytes)
                 }
             } catch (e: Exception) {
                 close(e)
@@ -40,7 +41,7 @@ object IPCUtils {
                 val w = write(data)
                 if (w == data.limit()) {
                     writable(null)
-                    cont.resume(true) {}
+                    cont.resume(true) { cause, _, _ -> }
                 }
             }
             writable(cb)
