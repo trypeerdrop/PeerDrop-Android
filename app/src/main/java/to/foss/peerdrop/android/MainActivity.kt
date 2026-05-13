@@ -5,19 +5,20 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.*
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.SideEffect
+import androidx.core.view.WindowCompat
 import org.koin.android.ext.android.inject
-import to.holepunch.peerdrop.android.data.ipc.IPCService
-import to.holepunch.peerdrop.android.ui.root.RootScreen
-import to.holepunch.peerdrop.android.ui.theme.PeerDropTheme
+import to.foss.peerdrop.android.data.ipc.IPCService
+import to.foss.peerdrop.android.ui.PeerDropTheme
+import to.foss.peerdrop.android.ui.RootScreen
 
 class MainActivity : ComponentActivity() {
 
-    // IPCService injected by Koin — singleton
     private val ipcService: IPCService by inject()
 
-    // File picker for send flow
     private var onFilesPicked: ((List<Uri>) -> Unit)? = null
     private val filePicker = registerForActivityResult(
         ActivityResultContracts.GetMultipleContents()
@@ -25,26 +26,40 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Start bare worklet
+        enableEdgeToEdge()
         ipcService.start()
 
-        // Extract shared files if launched via share intent
         val sharedUris: List<Uri> = when (intent?.action) {
-            Intent.ACTION_SEND -> listOfNotNull(
-                intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
-            )
-
-            Intent.ACTION_SEND_MULTIPLE ->
-                intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM) ?: emptyList()
-
+            Intent.ACTION_SEND -> {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    listOfNotNull(intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java))
+                } else {
+                    @Suppress("DEPRECATION")
+                    listOfNotNull(intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
+                }
+            }
+            Intent.ACTION_SEND_MULTIPLE -> {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java) ?: emptyList()
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM) ?: emptyList()
+                }
+            }
             else -> emptyList()
         }
 
         setContent {
             PeerDropTheme {
+                // Update status bar icons based on theme
+                val isDark = isSystemInDarkTheme()
+                SideEffect {
+                    WindowCompat.getInsetsController(window, window.decorView)
+                        .isAppearanceLightStatusBars = !isDark
+                }
+
                 RootScreen(
-                    sharedUris = sharedUris,
+                    sharedUris  = sharedUris,
                     onPickFiles = { callback ->
                         onFilesPicked = callback
                         filePicker.launch("*/*")
@@ -54,15 +69,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onPause() {
-        super.onPause(); ipcService.suspend()
-    }
-
-    override fun onResume() {
-        super.onResume(); ipcService.resume()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy(); ipcService.destroy()
-    }
+    override fun onPause()   { super.onPause();   ipcService.suspend() }
+    override fun onResume()  { super.onResume();  ipcService.resume()  }
+    override fun onDestroy() { super.onDestroy(); ipcService.destroy() }
 }
