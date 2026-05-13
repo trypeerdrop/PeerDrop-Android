@@ -13,15 +13,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import org.koin.androidx.compose.koinViewModel
-import to.holepunch.peerdrop.android.data.model.FileTransfer
-import to.holepunch.peerdrop.android.ui.theme.PeerDropColors
+import org.koin.compose.viewmodel.koinViewModel
+import to.foss.peerdrop.android.data.model.FileTransfer
+import to.foss.peerdrop.android.ui.peerDropColors
 
 @Composable
 fun TransfersScreen(
     contentPadding: PaddingValues,
     viewModel: TransfersViewModel = koinViewModel()
 ) {
+    val colors    = peerDropColors
     val transfers by viewModel.transfers.collectAsStateWithLifecycle()
 
     Box(Modifier.fillMaxSize().padding(contentPadding)) {
@@ -30,9 +31,9 @@ fun TransfersScreen(
                 Modifier.align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("↕", fontSize = 48.sp, color = PeerDropColors.VerySubtle)
+                Text("↕", fontSize = 48.sp, color = colors.verySubtle)
                 Spacer(Modifier.height(8.dp))
-                Text("No active transfers", color = PeerDropColors.Subtle)
+                Text("No active transfers", color = colors.subtle)
             }
         } else {
             LazyColumn(Modifier.fillMaxSize()) {
@@ -42,7 +43,7 @@ fun TransfersScreen(
                         modifier   = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
                         fontSize   = 28.sp,
                         fontWeight = FontWeight.Bold,
-                        color      = PeerDropColors.OnBackground
+                        color      = colors.onBackground
                     )
                 }
                 items(transfers, key = { it.id }) { transfer ->
@@ -55,21 +56,23 @@ fun TransfersScreen(
 
 @Composable
 fun TransferCard(transfer: FileTransfer) {
+    val colors    = peerDropColors
+    val isSending = transfer.direction == FileTransfer.Direction.SENDING
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = PeerDropColors.Surface),
+        colors = CardDefaults.cardColors(containerColor = colors.surface),
         shape  = RoundedCornerShape(12.dp)
     ) {
         Row(
             Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val isSending = transfer.direction == FileTransfer.Direction.SENDING
             Text(
                 if (isSending) "↑" else "↓",
-                color      = if (isSending) PeerDropColors.SendBlue else PeerDropColors.Online,
+                color      = if (isSending) colors.sendBlue else colors.online,
                 fontSize   = 18.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -77,25 +80,25 @@ fun TransferCard(transfer: FileTransfer) {
             Column(Modifier.weight(1f)) {
                 Text(
                     transfer.fileName,
-                    color    = PeerDropColors.OnBackground,
+                    color    = colors.onBackground,
                     fontSize = 14.sp,
                     maxLines = 1
                 )
                 Spacer(Modifier.height(6.dp))
                 LinearProgressIndicator(
-                    progress    = { transfer.progress },
-                    modifier    = Modifier
+                    progress   = { transfer.progress },
+                    modifier   = Modifier
                         .fillMaxWidth()
                         .height(4.dp)
                         .clip(RoundedCornerShape(2.dp)),
-                    color       = if (isSending) PeerDropColors.SendBlue else PeerDropColors.Online,
-                    trackColor  = PeerDropColors.SurfaceVar
+                    color      = if (isSending) colors.sendBlue else colors.online,
+                    trackColor = colors.surfaceVar
                 )
             }
             Spacer(Modifier.width(12.dp))
             Text(
                 "${(transfer.progress * 100).toInt()}%",
-                color    = PeerDropColors.Subtle,
+                color    = colors.subtle,
                 fontSize = 12.sp
             )
         }

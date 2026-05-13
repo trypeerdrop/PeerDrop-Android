@@ -1,7 +1,7 @@
 package to.foss.peerdrop.android.ui.settings
 
 import androidx.lifecycle.ViewModel
-import to.holepunch.peerdrop.android.data.repository.PeerDropRepository
+import to.foss.peerdrop.android.data.repository.PeerDropRepository
 
 class SettingsViewModel(private val repository: PeerDropRepository) : ViewModel() {
 

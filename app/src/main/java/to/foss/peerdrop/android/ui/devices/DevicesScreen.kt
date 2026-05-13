@@ -17,14 +17,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import org.koin.androidx.compose.koinViewModel
-import to.holepunch.peerdrop.android.data.model.PeerDevice
-import to.holepunch.peerdrop.android.ui.theme.PeerDropColors
+import org.koin.compose.viewmodel.koinViewModel
+import to.foss.peerdrop.android.data.model.PeerDevice
+import to.foss.peerdrop.android.ui.peerDropColors
 
 @Composable
 fun DevicesScreen(
@@ -33,14 +34,14 @@ fun DevicesScreen(
     onPickFiles:    ((List<Uri>) -> Unit) -> Unit,
     viewModel:      DevicesViewModel = koinViewModel()
 ) {
-    val peers by viewModel.peers.collectAsStateWithLifecycle()
+    val context   = LocalContext.current
+    val peers     by viewModel.peers.collectAsStateWithLifecycle()
     val contacts  = peers.filter { !it.isOwnDevice }
     val myDevices = peers.filter {  it.isOwnDevice }
 
-    var selectedPeer    by remember { mutableStateOf<PeerDevice?>(null) }
-    var showAddDialog   by remember { mutableStateOf(false) }
+    var selectedPeer  by remember { mutableStateOf<PeerDevice?>(null) }
+    var showAddDialog by remember { mutableStateOf(false) }
 
-    // Auto-navigate to send panel if launched via share intent
     LaunchedEffect(sharedUris) {
         if (sharedUris.isNotEmpty() && selectedPeer == null && contacts.isNotEmpty()) {
             selectedPeer = contacts.firstOrNull { it.isOnline } ?: contacts.firstOrNull()
@@ -53,12 +54,14 @@ fun DevicesScreen(
                 peer        = selectedPeer!!,
                 sharedUris  = sharedUris,
                 onBack      = { selectedPeer = null },
-                onPickFiles = { onPickFiles { uris -> uris.forEach { uri ->
-                    viewModel.sendFile(uri.toString(), selectedPeer!!.discoveryKey)
-                }}},
-                onSendUris  = { uris -> uris.forEach { uri ->
-                    viewModel.sendFile(uri.toString(), selectedPeer!!.discoveryKey)
-                }},
+                onPickFiles = {
+                    onPickFiles { uris ->
+                        viewModel.sendFiles(context, uris, selectedPeer!!.discoveryKey)
+                    }
+                },
+                onSendUris  = { uris ->
+                    viewModel.sendFiles(context, uris, selectedPeer!!.discoveryKey)
+                },
                 onForget    = {
                     viewModel.forgetPeer(selectedPeer!!.discoveryKey)
                     selectedPeer = null
@@ -66,10 +69,10 @@ fun DevicesScreen(
             )
         } else {
             PeerList(
-                myDevices     = myDevices,
-                contacts      = contacts,
-                onSelectPeer  = { selectedPeer = it },
-                onAddContact  = { showAddDialog = true }
+                myDevices    = myDevices,
+                contacts     = contacts,
+                onSelectPeer = { selectedPeer = it },
+                onAddContact = { showAddDialog = true }
             )
         }
     }
@@ -82,7 +85,7 @@ fun DevicesScreen(
     }
 }
 
-// ── Peer list ─────────────────────────────────────────────────────────────────
+// ── Peer list ──────────────────────────────────────────────────────────────────
 
 @Composable
 private fun PeerList(
@@ -91,6 +94,7 @@ private fun PeerList(
     onSelectPeer: (PeerDevice) -> Unit,
     onAddContact: () -> Unit
 ) {
+    val colors = peerDropColors
     LazyColumn(Modifier.fillMaxSize()) {
         item {
             Row(
@@ -99,13 +103,13 @@ private fun PeerList(
             ) {
                 Text(
                     "PeerDrop",
-                    fontSize     = 28.sp,
-                    fontWeight   = FontWeight.Bold,
-                    color        = PeerDropColors.OnBackground
+                    fontSize   = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color      = colors.onBackground
                 )
                 Spacer(Modifier.weight(1f))
                 IconButton(onClick = onAddContact) {
-                    Icon(Icons.Default.PersonAdd, null, tint = PeerDropColors.Primary)
+                    Icon(Icons.Default.PersonAdd, null, tint = colors.primary)
                 }
             }
         }
@@ -137,12 +141,13 @@ fun SectionHeader(title: String) {
         fontSize      = 11.sp,
         fontWeight    = FontWeight.SemiBold,
         letterSpacing = 1.sp,
-        color         = PeerDropColors.Subtle
+        color         = peerDropColors.subtle
     )
 }
 
 @Composable
 fun PeerRow(peer: PeerDevice, onClick: () -> Unit) {
+    val colors = peerDropColors
     Row(
         Modifier
             .fillMaxWidth()
@@ -151,10 +156,8 @@ fun PeerRow(peer: PeerDevice, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
-            Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(if (peer.isOnline) Color(0xFF1A1A3E) else Color(0xFF1A1A1A)),
+            Modifier.size(44.dp).clip(CircleShape)
+                .background(if (peer.isOnline) colors.primaryDim else Color(0xFF1A1A1A)),
             Alignment.Center
         ) {
             Text(
@@ -168,42 +171,38 @@ fun PeerRow(peer: PeerDevice, onClick: () -> Unit) {
                 fontSize = 20.sp
             )
         }
-
         Spacer(Modifier.width(12.dp))
-
         Column(Modifier.weight(1f)) {
             Text(
                 text       = peer.displayName.ifEmpty { peer.discoveryKey.take(12) + "…" },
-                color      = PeerDropColors.OnBackground,
+                color      = colors.onBackground,
                 fontWeight = FontWeight.Medium,
                 fontSize   = 15.sp
             )
             Text(
                 text     = if (peer.isOnline) "Online" else "Offline",
-                color    = if (peer.isOnline) PeerDropColors.Online else PeerDropColors.Subtle,
+                color    = if (peer.isOnline) colors.online else colors.subtle,
                 fontSize = 12.sp
             )
         }
-
         Box(
-            Modifier
-                .size(8.dp)
-                .clip(CircleShape)
-                .background(if (peer.isOnline) PeerDropColors.Online else PeerDropColors.VerySubtle)
+            Modifier.size(8.dp).clip(CircleShape)
+                .background(if (peer.isOnline) colors.online else colors.verySubtle)
         )
     }
 }
 
 @Composable
 private fun EmptyContacts() {
+    val colors = peerDropColors
     Column(
         Modifier.fillMaxWidth().padding(vertical = 40.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text("👤", fontSize = 40.sp)
         Spacer(Modifier.height(8.dp))
-        Text("No contacts yet", color = PeerDropColors.Subtle, fontSize = 14.sp)
-        Text("Tap + to add someone", color = PeerDropColors.VerySubtle, fontSize = 12.sp)
+        Text("No contacts yet", color = colors.subtle, fontSize = 14.sp)
+        Text("Tap + to add someone", color = colors.verySubtle, fontSize = 12.sp)
     }
 }
 
@@ -211,31 +210,30 @@ private fun EmptyContacts() {
 
 @Composable
 private fun SendPanel(
-    peer:       PeerDevice,
-    sharedUris: List<Uri>,
-    onBack:     () -> Unit,
-    onPickFiles:() -> Unit,
-    onSendUris: (List<Uri>) -> Unit,
-    onForget:   () -> Unit
+    peer:        PeerDevice,
+    sharedUris:  List<Uri>,
+    onBack:      () -> Unit,
+    onPickFiles: () -> Unit,
+    onSendUris:  (List<Uri>) -> Unit,
+    onForget:    () -> Unit
 ) {
-    // Auto-send if launched via share intent
+    val colors = peerDropColors
+
     LaunchedEffect(peer, sharedUris) {
         if (sharedUris.isNotEmpty()) onSendUris(sharedUris)
     }
 
     Column(Modifier.fillMaxSize()) {
-        // Header
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, null,
-                    tint = PeerDropColors.OnBackground)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = colors.onBackground)
             }
             Box(
                 Modifier.size(40.dp).clip(CircleShape)
-                    .background(if (peer.isOnline) Color(0xFF1A1A3E) else Color(0xFF1A1A1A)),
+                    .background(if (peer.isOnline) colors.primaryDim else colors.surfaceVar),
                 Alignment.Center
             ) {
                 Text(if (peer.isOnline) "🖥" else "💤", fontSize = 18.sp)
@@ -245,54 +243,47 @@ private fun SendPanel(
                 Text(
                     peer.displayName,
                     fontWeight = FontWeight.SemiBold,
-                    color      = PeerDropColors.OnBackground
+                    color      = colors.onBackground
                 )
                 Text(
                     if (peer.isOnline) "Ready to receive" else "Offline",
-                    color    = if (peer.isOnline) PeerDropColors.Online else PeerDropColors.Warning,
+                    color    = if (peer.isOnline) colors.online else colors.warning,
                     fontSize = 12.sp
                 )
             }
             TextButton(onClick = onForget) {
-                Text("Remove", color = PeerDropColors.Danger, fontSize = 12.sp)
+                Text("Remove", color = colors.danger, fontSize = 12.sp)
             }
         }
 
-        HorizontalDivider(color = PeerDropColors.SurfaceVar)
+        HorizontalDivider(color = colors.surfaceVar)
 
-        // Drop zone
         Card(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF0D0D18)),
-            shape  = RoundedCornerShape(16.dp),
-            border = androidx.compose.foundation.BorderStroke(2.dp, PeerDropColors.SurfaceVar)
+            modifier = Modifier.fillMaxSize().padding(20.dp),
+            colors   = CardDefaults.cardColors(containerColor = colors.surface),
+            shape    = RoundedCornerShape(16.dp),
+            border   = androidx.compose.foundation.BorderStroke(2.dp, colors.border)
         ) {
             Column(
                 Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text("⬇", fontSize = 44.sp, color = PeerDropColors.VerySubtle)
+                Text("⬇", fontSize = 44.sp, color = colors.verySubtle)
                 Spacer(Modifier.height(12.dp))
-                Text(
-                    "Tap to pick files to send",
-                    color    = PeerDropColors.Subtle,
-                    fontSize = 14.sp
-                )
+                Text("Tap to pick files to send", color = colors.subtle, fontSize = 14.sp)
                 Spacer(Modifier.height(16.dp))
                 OutlinedButton(
                     onClick = onPickFiles,
                     enabled = peer.isOnline,
                     border  = androidx.compose.foundation.BorderStroke(
                         1.dp,
-                        if (peer.isOnline) PeerDropColors.Primary else Color(0xFF222222)
+                        if (peer.isOnline) colors.primary else colors.border
                     )
                 ) {
                     Text(
                         "Browse Files",
-                        color = if (peer.isOnline) PeerDropColors.Primary else PeerDropColors.VerySubtle
+                        color = if (peer.isOnline) colors.primary else colors.verySubtle
                     )
                 }
             }
@@ -300,46 +291,45 @@ private fun SendPanel(
     }
 }
 
-// ── Add Contact dialog ────────────────────────────────────────────────────────
+// ── Add Contact dialog ─────────────────────────────────────────────────────────
 
 @Composable
 private fun AddContactDialog(onDismiss: () -> Unit, onAdd: (String) -> Unit) {
+    val colors = peerDropColors
     var peerID by remember { mutableStateOf("") }
     val valid  = peerID.length == 64
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor   = PeerDropColors.Surface,
+        containerColor   = colors.surface,
         title = {
-            Text("Add Contact", color = PeerDropColors.OnBackground, fontWeight = FontWeight.Bold)
+            Text("Add Contact", color = colors.onBackground, fontWeight = FontWeight.Bold)
         },
         text = {
             Column {
-                Text(
-                    "Paste the 64-character Peer ID",
-                    color    = PeerDropColors.Subtle,
-                    fontSize = 13.sp
-                )
+                Text("Paste the 64-character Peer ID", color = colors.subtle, fontSize = 13.sp)
                 Spacer(Modifier.height(12.dp))
                 OutlinedTextField(
                     value         = peerID,
                     onValueChange = { peerID = it.trim() },
                     placeholder   = {
-                        Text("e.g. a1b2c3d4…", color = PeerDropColors.VerySubtle, fontSize = 12.sp)
+                        Text("e.g. a1b2c3d4…", color = colors.verySubtle, fontSize = 12.sp)
                     },
                     singleLine    = true,
-                    fontFamily    = FontFamily.Monospace,
-                    isError       = peerID.isNotEmpty() && !valid,
+                    textStyle     = androidx.compose.ui.text.TextStyle(
+                        fontFamily = FontFamily.Monospace
+                    ),
+                    isError        = peerID.isNotEmpty() && !valid,
                     supportingText = {
                         if (peerID.isNotEmpty() && !valid)
                             Text("${peerID.length}/64 characters", fontSize = 11.sp)
                     },
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor   = PeerDropColors.Primary,
-                        unfocusedBorderColor = PeerDropColors.Border,
-                        focusedTextColor     = PeerDropColors.OnBackground,
-                        unfocusedTextColor   = PeerDropColors.OnBackground,
-                        errorBorderColor     = PeerDropColors.Warning,
+                        focusedBorderColor   = colors.primary,
+                        unfocusedBorderColor = colors.border,
+                        focusedTextColor     = colors.onBackground,
+                        unfocusedTextColor   = colors.onBackground,
+                        errorBorderColor     = colors.warning,
                     )
                 )
             }
@@ -349,14 +339,14 @@ private fun AddContactDialog(onDismiss: () -> Unit, onAdd: (String) -> Unit) {
                 onClick  = { onAdd(peerID) },
                 enabled  = valid,
                 colors   = ButtonDefaults.buttonColors(
-                    containerColor         = PeerDropColors.Primary,
-                    disabledContainerColor = PeerDropColors.VerySubtle
+                    containerColor         = colors.primary,
+                    disabledContainerColor = colors.verySubtle
                 )
             ) { Text("Add") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel", color = PeerDropColors.Subtle)
+                Text("Cancel", color = colors.subtle)
             }
         }
     )
