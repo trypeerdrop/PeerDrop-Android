@@ -1,9 +1,9 @@
-package to.holepunch.peerdrop.android
+package to.foss.peerdrop.android
 
 import android.app.Application
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
-import to.holepunch.peerdrop.android.di.appModule
+import to.foss.peerdrop.android.di.appModule
 
 class PeerDropApp : Application() {
     override fun onCreate() {
