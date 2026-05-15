@@ -9,6 +9,26 @@ android {
   compileSdk = 36
   ndkVersion = "27.2.12479018"
 
+  signingConfigs {
+    release {
+      storeFile     file(System.getenv("KEYSTORE_PATH") ?: "~/.config/key_store.jks")
+      storePassword System.getenv("KEYSTORE_PASSWORD") ?: ""
+      keyAlias      System.getenv("KEY_ALIAS") ?: "peerdrop"
+      keyPassword   System.getenv("KEY_PASSWORD") ?: ""
+    }
+  }
+
+  buildTypes {
+    release {
+      minifyEnabled   false
+      signingConfig   signingConfigs.release
+      proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+    }
+    debug {
+      applicationIdSuffix ".debug"
+    }
+  }
+
   defaultConfig {
     applicationId = "to.foss.peerdrop.android"
     minSdk = 24
@@ -45,7 +65,6 @@ tasks.register("link", Exec) {
     "--host", "android-arm",
     "--host", "android-arm64",
     "--host", "android-ia32",
-    "--host", "android-x64",
     // "--needs", "libbare-kit.so",
     "--out", "app/src/main/addons"
   ])
@@ -59,7 +78,6 @@ tasks.register("pack", Exec) {
     "--host", "android-arm",
     "--host", "android-arm64",
     "--host", "android-ia32",
-    "--host", "android-x64",
     "--linked",
     "--out", "app/src/main/assets/app.bundle",
     "app/src/main/js/app.js"
@@ -70,20 +88,24 @@ preBuild.dependsOn link, pack
 
 dependencies {
   api fileTree(dir: "libs", include: ["bare-kit/classes.jar"])
-  implementation('androidx.compose.material3:material3:1.4.0')
-  implementation('androidx.compose.ui:ui:1.11.1')
-  implementation('androidx.compose.ui:ui-tooling-preview:1.11.1')
-  implementation('androidx.activity:activity-compose:1.13.0')
-  implementation("androidx.navigation:navigation-compose:2.9.8")
+  // Compose — compatible with API 24+
+  implementation('androidx.compose.material3:material3:1.3.1')
+  implementation('androidx.compose.ui:ui:1.7.8')
+  implementation('androidx.compose.ui:ui-tooling-preview:1.7.8')
+  implementation('androidx.activity:activity-compose:1.9.3')
   implementation('androidx.compose.material:material-icons-extended:1.7.8')
+
   implementation('com.google.zxing:core:3.5.4')
 
   // Lifecycle
-  implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
-  implementation("androidx.lifecycle:lifecycle-runtime-compose:2.10.0")
+  implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+  implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+
+  implementation("androidx.navigation:navigation-compose:2.7.7")
+
 
   // Koin
-  implementation("io.insert-koin:koin-android:4.2.1")
-  implementation("io.insert-koin:koin-androidx-compose:4.2.1")
-  implementation("io.insert-koin:koin-androidx-compose-navigation:4.2.1")
+  implementation("io.insert-koin:koin-android:3.5.6")
+  implementation("io.insert-koin:koin-androidx-compose:3.5.6")
+  implementation("io.insert-koin:koin-androidx-compose-navigation:3.5.6")
 }

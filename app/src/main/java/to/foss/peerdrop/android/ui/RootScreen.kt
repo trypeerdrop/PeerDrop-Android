@@ -9,7 +9,7 @@ import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import org.koin.compose.viewmodel.koinViewModel
+import org.koin.androidx.compose.koinViewModel
 import to.foss.peerdrop.android.ui.devices.DevicesScreen
 import to.foss.peerdrop.android.ui.received.ReceivedScreen
 import to.foss.peerdrop.android.ui.settings.SettingsScreen

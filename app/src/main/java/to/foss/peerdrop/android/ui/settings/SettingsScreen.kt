@@ -1,6 +1,7 @@
 package to.foss.peerdrop.android.ui.settings
 
 import android.content.ClipData
+import android.content.ClipboardManager
 import android.graphics.Bitmap
 import android.graphics.Color
 import androidx.compose.foundation.layout.*
@@ -12,8 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalClipboard
-import androidx.compose.ui.platform.toClipEntry
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -24,8 +24,7 @@ import androidx.core.graphics.set
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
-import kotlinx.coroutines.launch
-import org.koin.compose.viewmodel.koinViewModel
+import org.koin.androidx.compose.koinViewModel
 import to.foss.peerdrop.android.ui.peerDropColors
 
 @Composable
@@ -34,10 +33,10 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = koinViewModel()
 ) {
     val colors    = peerDropColors
+    val context   = LocalContext.current
     val myPeerID  by viewModel.myPeerID.collectAsStateWithLifecycle()
     val ready     by viewModel.ready.collectAsStateWithLifecycle()
-    val clipboard  = LocalClipboard.current
-    val scope     = rememberCoroutineScope()
+    val clipboard = context.getSystemService(ClipboardManager::class.java)
 
     var downloadPath by remember { mutableStateOf("PeerDrop") }
     var copied       by remember { mutableStateOf(false) }
@@ -96,11 +95,9 @@ fun SettingsScreen(
                     OutlinedButton(
                         onClick = {
                             if (myPeerID.isNotEmpty()) {
-                                scope.launch {
-                                    clipboard.setClipEntry(
-                                        ClipData.newPlainText("Peer ID", myPeerID).toClipEntry()
-                                    )
-                                }
+                                clipboard.setPrimaryClip(
+                                    ClipData.newPlainText("Peer ID", myPeerID)
+                                )
                                 copied = true
                             }
                         },

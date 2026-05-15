@@ -1,7 +1,7 @@
 package to.foss.peerdrop.android.di
 
 import org.koin.android.ext.koin.androidContext
-import org.koin.core.module.dsl.viewModel
+import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 import to.foss.peerdrop.android.data.ipc.IPCService
 import to.foss.peerdrop.android.data.repository.PeerDropRepository
