@@ -2,7 +2,6 @@ package to.foss.peerdrop.android
 
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -27,17 +26,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // enableEdgeToEdge requires API 29+ — safe guard for Android 7
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            enableEdgeToEdge()
-        }
+        enableEdgeToEdge()
 
         ipcService.start()
 
         val sharedUris: List<Uri> = when (intent?.action) {
             Intent.ACTION_SEND -> {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
                     listOfNotNull(intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java))
                 } else {
                     @Suppress("DEPRECATION")
@@ -45,7 +40,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             Intent.ACTION_SEND_MULTIPLE -> {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
                     intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java) ?: emptyList()
                 } else {
                     @Suppress("DEPRECATION")
@@ -59,13 +54,9 @@ class MainActivity : ComponentActivity() {
             PeerDropTheme {
                 val isDark = isSystemInDarkTheme()
                 SideEffect {
-                    // isAppearanceLightStatusBars requires API 23+
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        WindowCompat.getInsetsController(window, window.decorView)
-                            .isAppearanceLightStatusBars = !isDark
-                    }
+                    WindowCompat.getInsetsController(window, window.decorView)
+                        .isAppearanceLightStatusBars = !isDark
                 }
-
                 RootScreen(
                     sharedUris  = sharedUris,
                     onPickFiles = { callback ->
